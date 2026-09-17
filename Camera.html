@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kamera Web</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: #111;
+      color: white;
+      font-family: Arial, sans-serif;
+      display: flex;
+      justify-content: center;
+      min-height: 100vh;
+    }
+
+    .camera-app {
+      width: 100%;
+      max-width: 500px;
+      min-height: 100vh;
+      background: #1b1b1b;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .header {
+      padding: 18px;
+      text-align: center;
+      font-size: 20px;
+      font-weight: bold;
+    }
+
+    .camera-container {
+      position: relative;
+      width: 100%;
+      background: black;
+      overflow: hidden;
+    }
+
+    video {
+      width: 100%;
+      display: block;
+      aspect-ratio: 3 / 4;
+      object-fit: cover;
+    }
+
+    canvas {
+      display: none;
+    }
+
+    .controls {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 25px;
+      padding: 25px 15px;
+    }
+
+    button {
+      border: none;
+      cursor: pointer;
+      color: white;
+      background: #333;
+      border-radius: 50%;
+      width: 55px;
+      height: 55px;
+      font-size: 22px;
+    }
+
+    .capture {
+      width: 75px;
+      height: 75px;
+      background: white;
+      border: 6px solid #777;
+    }
+
+    .capture:active {
+      transform: scale(0.9);
+    }
+
+    .result {
+      padding: 15px;
+      display: none;
+    }
+
+    .result img {
+      width: 100%;
+      border-radius: 12px;
+    }
+
+    .download {
+      display: block;
+      text-align: center;
+      background: #2196f3;
+      color: white;
+      text-decoration: none;
+      padding: 13px;
+      border-radius: 10px;
+      margin-top: 12px;
+    }
+
+    .message {
+      text-align: center;
+      padding: 20px;
+      color: #aaa;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="camera-app">
+
+    <div class="header">
+      📷 Kamera Web
+    </div>
+
+    <div class="camera-container">
+      <video id="video" autoplay playsinline></video>
+      <canvas id="canvas"></canvas>
+    </div>
+
+    <div class="message" id="message">
+      Meminta izin kamera...
+    </div>
+
+    <div class="controls">
+      <button id="switchCamera">🔄</button>
+
+      <button class="capture" id="capture"></button>
+
+      <button id="reset">↺</button>
+    </div>
+
+    <div class="result" id="result">
+      <img id="photo" alt="Hasil foto">
+      <a id="download" class="download" download="foto-kamera.png">
+        💾 Download Foto
+      </a>
+    </div>
+
+  </div>
+
+  <script>
+const video = document.getElementById("video");
+const canvas = document.getElementById("canvas");
+const capture = document.getElementById("capture");
+const switchCamera = document.getElementById("switchCamera");
+const reset = document.getElementById("reset");
+const photo = document.getElementById("photo");
+const download = document.getElementById("download");
+const result = document.getElementById("result");
+const message = document.getElementById("message");
+
+let stream = null;
+let facingMode = "environment";
+
+// Mulai kamera
+async function startCamera() {
+    try {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            throw new Error("Browser tidak mendukung kamera");
+        }
+
+        if (stream) {
+            stream.getTracks().forEach(track => track.stop());
+        }
+
+        stream = await navigator.mediaDevices.getUserMedia({
+            video: {
+                facingMode: {
+                    ideal: facingMode
+                }
+            },
+            audio: false
+        });
+
+        video.srcObject = stream;
+        message.textContent = "Kamera aktif";
+        message.style.color = "#00ff88";
+
+    } catch (error) {
+        console.error(error);
+
+        message.textContent =
+            "Kamera tidak dapat digunakan. Izinkan akses kamera dan jalankan melalui HTTPS/localhost.";
+
+        message.style.color = "#ff5555";
+    }
+}
+
+// Ambil foto
+capture.addEventListener("click", () => {
+    if (!stream) {
+        startCamera();
+        return;
+    }
+
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(video, 0, 0);
+
+    const image = canvas.toDataURL("image/jpeg", 0.95);
+
+    photo.src = image;
+    download.href = image;
+
+    result.style.display = "block";
+});
+
+// Ganti kamera
+switchCamera.addEventListener("click", () => {
+    facingMode =
+        facingMode === "environment"
+        ? "user"
+        : "environment";
+
+    startCamera();
+});
+
+// Reset
+reset.addEventListener("click", () => {
+    result.style.display = "none";
+    photo.src = "";
+});
+
+// Mulai kamera
+startCamera();
+</script>
+
+</body>
+</html>
